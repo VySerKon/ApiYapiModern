@@ -1,3 +1,4 @@
+import helpers.CustomAllureListener;
 import io.restassured.http.ContentType;
 import models.UserData;
 import models.UserRequest;
@@ -9,10 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import specs.SpecSpecs;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,7 +38,9 @@ public class ApiYapiTest extends ApiTestBase {
     @MethodSource("dataUsers")
     @DisplayName("Проверка полного соответствия имён и идентификаторов пользователей")
     void findNameForAllUsers(int userId, String hisName) {
-        List<UserData> users = given()
+        List<UserData> users = step("Получаем список пользователей", () ->
+                given()
+                .spec(SpecSpecs.requestSpec)
                 .queryParam("page", 2)
                 .when()
                 .get("/users")
@@ -43,72 +48,80 @@ public class ApiYapiTest extends ApiTestBase {
                 .statusCode(200)
                 .extract()
                 .jsonPath()
-                .getList("data", UserData.class);
+                .getList("data", UserData.class)
+        );
 
-        UserData foundUser = users.stream()
+        UserData foundUser = step("Ищем пользователя по ID: " + userId, () ->
+                users.stream()
                 .filter(user -> user.getId().equals(userId))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("Пользователь не найден!"));
-        assertEquals(hisName, foundUser.getFirst_name());
+                .orElseThrow(() -> new AssertionError("Пользователь не найден!"))
+        );
+        step("Проверяем имя пользователя", () -> assertEquals(hisName, foundUser.getFirst_name()));
     }
 
     @Test
     @DisplayName("Проверка корректного сохранения параметров пользователя при создании")
     void checkUserCreation() {
-        UserRequest userRequest = UserRequest.builder()
+        UserRequest userRequest = step("Создаём тестового пользователя", () ->
+                UserRequest.builder()
                 .name("Shiza")
                 .job("Superman")
-                .build();
-        UserResponse response = given()
-                .contentType(ContentType.JSON)
-                .header("x-api-key", "reqres-free-v1")
+                .build());
+        UserResponse response = step("Отправляем POST-запрос", () ->
+                given()
+                .spec(SpecSpecs.requestSpec)
                 .body(userRequest)
                 .when()
                 .post("/users")
                 .then()
                 .statusCode(201)
                 .extract()
-                .as(UserResponse.class);
-                assertEquals("Shiza", response.getName());
-                assertEquals("Superman", response.getJob());
-                assertNotNull(response.getId());
-                assertNotNull(response.getCreatedAt());
+                .as(UserResponse.class));
+        step("Проверяем ответ", () -> {
+            assertEquals("Shiza", response.getName());
+            assertEquals("Superman", response.getJob());
+            assertNotNull(response.getId());
+            assertNotNull(response.getCreatedAt());
+        });
     }
 
     private int userId;
 
     @BeforeEach
     void setUp() {
-        UserRequest userRequest = UserRequest.builder()
+        UserRequest userRequest = step("Подготавливаем тестовые данные", () ->
+                UserRequest.builder()
                 .name("Shiza")
                 .job("Superman")
-                .build();
-        UserResponse response = given()
+                .build());
+        UserResponse response = step("Создаём пользователя", () ->
+                given()
+                .spec(SpecSpecs.requestSpec)
                 .log().all()
-                .contentType(ContentType.JSON)
-                .header("x-api-key", "reqres-free-v1")
                 .body(userRequest)
                 .when()
                 .post("/users")
                 .then()
                 .log().all()
                 .extract().
-                as(UserResponse.class);
-        userId = Integer.parseInt(response.getId());
-        System.out.println("Получаем ID: " + userId);
+                as(UserResponse.class));
+        userId = step("Сохраняем ID пользователя", () ->
+                Integer.parseInt(response.getId()));
     }
 
     @Test
     @DisplayName("Обновление пользователя через PUT (с проверкой ответа)")
     void updateUser_PutRequest_ReturnsUpdatedData() {
-        UserRequest updatedUser = UserRequest.builder()
+        UserRequest updatedUser = step("Подготавливаем данные для обновления", () ->
+                UserRequest.builder()
                 .name("Shiza UPDATED")
                 .job("Batman")
-                .build();
-        UserResponse response = given()
+                .build());
+        UserResponse response = step("Отправляем PUT-запрос", () ->
+                given()
+                .spec(SpecSpecs.requestSpec)
                 .log().all()
-                .contentType(ContentType.JSON)
-                .header("x-api-key", "reqres-free-v1")
                 .body(updatedUser)
                 .when()
                 .put("/users/" + userId)
@@ -116,22 +129,26 @@ public class ApiYapiTest extends ApiTestBase {
                 .log().all()
                 .statusCode(200)
                 .extract()
-                .as(UserResponse.class);
-                assertEquals("Shiza UPDATED", response.getName());
-                assertEquals("Batman", response.getJob());
-                assertNotNull(response.getUpdatedAt());
+                .as(UserResponse.class));
+                step("Проверяем ответ", () -> {
+                    assertEquals("Shiza UPDATED", response.getName());
+                    assertEquals("Batman", response.getJob());
+                    assertNotNull(response.getUpdatedAt());
+                });
     }
 
     @AfterEach
     void tearDown() {
-        given()
-                .log().all()
-                .header("x-api-key", "reqres-free-v1")
-                .when()
-                .delete("/users/" + userId)
-                .then()
-                .log().all()
-                .statusCode(204);
+                step("Удаляем пользователя с ID: " + userId, () -> {
+                    given()
+                            .spec(SpecSpecs.requestSpec)
+                            .log().all()
+                            .when()
+                            .delete("/users/" + userId)
+                            .then()
+                            .log().all()
+                            .statusCode(204);
+                });
     }
 }
 
