@@ -97,7 +97,6 @@ public class ApiYapiTest extends ApiTestBase {
         UserResponse response = step("Создаём пользователя", () ->
                 given()
                 .spec(SpecSpecs.requestSpec)
-                .log().all()
                 .body(userRequest)
                 .when()
                 .post("/users")
@@ -120,7 +119,6 @@ public class ApiYapiTest extends ApiTestBase {
         UserResponse response = step("Отправляем PUT-запрос", () ->
                 given()
                 .spec(SpecSpecs.requestSpec)
-                .log().all()
                 .body(updatedUser)
                 .when()
                 .put("/users/" + userId)
@@ -140,7 +138,6 @@ public class ApiYapiTest extends ApiTestBase {
                 step("Удаляем пользователя с ID: " + userId, () -> {
                     given()
                             .spec(SpecSpecs.requestSpec)
-                            .log().all()
                             .when()
                             .delete("/users/" + userId)
                             .then()
