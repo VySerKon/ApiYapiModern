@@ -1,5 +1,4 @@
-import helpers.CustomAllureListener;
-import io.restassured.http.ContentType;
+
 import models.UserData;
 import models.UserRequest;
 import models.UserResponse;
@@ -45,7 +44,7 @@ public class ApiYapiTest extends ApiTestBase {
                 .when()
                 .get("/users")
                 .then()
-                .statusCode(200)
+                .spec(SpecSpecs.response200)
                 .extract()
                 .jsonPath()
                 .getList("data", UserData.class)
@@ -75,7 +74,7 @@ public class ApiYapiTest extends ApiTestBase {
                 .when()
                 .post("/users")
                 .then()
-                .statusCode(201)
+                .spec(SpecSpecs.response201)
                 .extract()
                 .as(UserResponse.class));
         step("Проверяем ответ", () -> {
@@ -126,8 +125,7 @@ public class ApiYapiTest extends ApiTestBase {
                 .when()
                 .put("/users/" + userId)
                 .then()
-                .log().all()
-                .statusCode(200)
+                .spec(SpecSpecs.response200)
                 .extract()
                 .as(UserResponse.class));
                 step("Проверяем ответ", () -> {
@@ -146,8 +144,7 @@ public class ApiYapiTest extends ApiTestBase {
                             .when()
                             .delete("/users/" + userId)
                             .then()
-                            .log().all()
-                            .statusCode(204);
+                            .spec(SpecSpecs.response204);
                 });
     }
 }

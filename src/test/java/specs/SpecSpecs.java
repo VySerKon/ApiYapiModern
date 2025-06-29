@@ -14,5 +14,23 @@ public class SpecSpecs {
             .addFilter(CustomAllureListener.withCustomTemplates())
             .setContentType(ContentType.JSON)
             .addHeader("x-api-key", "reqres-free-v1")
+            .log(LogDetail.ALL)
             .build();
+
+    public static  ResponseSpecification response200 = new ResponseSpecBuilder()
+            .expectStatusCode(200)
+            .log(LogDetail.ALL)
+            .build();
+
+    public static ResponseSpecification response201 = new ResponseSpecBuilder()
+            .expectStatusCode(201)
+            .log(LogDetail.ALL)
+            .build();
+
+    public static ResponseSpecification response204 = new ResponseSpecBuilder()
+            .expectStatusCode(204)
+            .log(LogDetail.ALL)
+            .build();
+
+
 }
